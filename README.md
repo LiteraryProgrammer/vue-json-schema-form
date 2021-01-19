@@ -12,6 +12,7 @@
 <a href="https://form.lljj.me/schema-generator.html">可视化表单Schema编辑器</a>
 <br />
 </p>
+
 ![](https://lljj-xxxx.oss-cn-hongkong.aliyuncs.com/vue-json-schema-form.gif)
 
 ## 交流群
