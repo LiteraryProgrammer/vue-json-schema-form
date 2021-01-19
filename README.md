@@ -1,8 +1,6 @@
 <h3 align="center">vue-json-schema-form</h3>
 <p align="center">
-基于 Vue、 <a href="https://json-schema.org/understanding-json-schema/index.html">JSON Schema</a> 生成带完整校验的Form表单.
-<br />
-<span style="color:#666;">你的 :star2: :star2: :star2: 就是最大的支持</span>
+基于 Vue、 <a href="https://json-schema.org/understanding-json-schema/index.html">JSON Schema</a> 生成带完整校验的Form表单，你的 :star2: :star2: :star2: 就是最大的支持
 <br />
 <br />
 <a href="https://vue-json-schema-form.lljj.me">查看文档</a>
