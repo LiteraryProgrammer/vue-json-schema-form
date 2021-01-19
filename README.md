@@ -1,15 +1,8 @@
-<h3 align="center">vue-json-schema-form</h3>
-<p align="center">
-基于 Vue、 <a href="https://json-schema.org/understanding-json-schema/index.html">JSON Schema</a> 生成带完整校验的Form表单，你的 :star2: :star2: :star2: 就是最大的支持
-<br />
-<br />
-<a href="https://vue-json-schema-form.lljj.me">查看文档</a>
--
-<a href="https://form.lljj.me">Playground</a>
--
-<a href="https://form.lljj.me/schema-generator.html">可视化表单Schema编辑器</a>
-<br />
-</p>
+## vue-json-schema-form
+
+基于 Vue、 [JSON Schema](https://json-schema.org/understanding-json-schema/index.html) 生成带完整校验的Form表单，你的 :star2: :star2: :star2: 就是最大的支持
+
+[查看文档](https://vue-json-schema-form.lljj.me) - [Playground](https://form.lljj.me) - [可视化表单Schema生成器](https://form.lljj.me/schema-generator.html)
 
 ![](https://lljj-xxxx.oss-cn-hongkong.aliyuncs.com/vue-json-schema-form.gif)
 
