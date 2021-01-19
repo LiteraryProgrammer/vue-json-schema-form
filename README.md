@@ -1,11 +1,13 @@
 # vue-json-schema-form
-* 基于 `Vue`、`ElementUi`、`JSON Schema` 动态生成一个带完整校验的Form表单
-* 支持通过 [可视化Schema编辑器](https://form.lljj.me/schema-generator.html "Vue JSON Schema Form 可视化编辑器") 快速生成表单对应Schema
-* :star2: :star2: :star2: 你的 `star` 就是最大的支持
+* 基于 `Vue`、``JSON Schema` 动态生成一个带完整校验的Form表单，:star2: :star2: :star2: 你的 `star` 就是最大的支持
 
-## 快速体验
-* [查看文档](https://vue-json-schema-form.lljj.me/ "Vue JSON Schema Docs")
-* [Playground 演示](https://form.lljj.me/ "Vue JSON Schema Form Demo") / [可视化表单Schema编辑器](https://form.lljj.me/schema-generator.html "Vue JSON Schema Form 可视化编辑器") / [可视化活动编辑器](https://form.lljj.me/vue-editor.html)
+<p align="center">
+<a href="https://vue-json-schema-form.lljj.me">查看文档</a>
+-
+<a href="https://form.lljj.me">Playground</a>
+-
+<a href="https://form.lljj.me/schema-generator.html">可视化表单Schema编辑器</a>
+</p>
 
 > 查看如何启动 [Playground,表单Schema生成器,活动编辑器相关页面](#如何启动相关编辑器页面)
 
