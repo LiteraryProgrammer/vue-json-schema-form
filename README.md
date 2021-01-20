@@ -56,8 +56,7 @@ yarn run demo:dev --dir=vue-editor
 
 ## 相关资料
 [JSON Schema](https://json-schema.org/understanding-json-schema/index.html) |
-[Vue](https://cn.vuejs.org/) |
-[Element Ui](https://element.eleme.io/)
+[Vue](https://cn.vuejs.org/)
 
 ### 为何开发
 在做前端可视化编辑时，为了解决数据配置表单的通用性，所以使用 `JSON Schema` 描述数据结构，动态生成表单。
