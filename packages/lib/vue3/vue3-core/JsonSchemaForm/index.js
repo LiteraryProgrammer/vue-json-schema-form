@@ -159,7 +159,7 @@ export default function createForm(globalOptions = {}) {
     };
 
     Form.install = (vueApp, options = {}) => {
-        vueApp.component(Form.name || options.name, Form);
+        vueApp.component(options.name || Form.name, Form);
     };
 
     return Form;
