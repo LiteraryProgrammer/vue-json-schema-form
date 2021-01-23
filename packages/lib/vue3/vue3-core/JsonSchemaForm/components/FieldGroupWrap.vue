@@ -1,19 +1,17 @@
 <template>
     <div class="fieldGroupWrap">
-        <template>
-            <h3
-                v-if="showTitle && title"
-                class="fieldGroupWrap_title"
-            >
-                {{ title }}
-            </h3>
-            <p
-                v-if="showDescription && description"
-                class="fieldGroupWrap_des"
-                v-html="description"
-            >
-            </p>
-        </template>
+        <h3
+            v-if="showTitle && title"
+            class="fieldGroupWrap_title"
+        >
+            {{ title }}
+        </h3>
+        <p
+            v-if="showDescription && description"
+            class="fieldGroupWrap_des"
+            v-html="description"
+        >
+        </p>
         <div class="fieldGroupWrap_box">
             <slot></slot>
         </div>

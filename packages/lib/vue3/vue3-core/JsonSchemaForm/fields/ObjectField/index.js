@@ -3,6 +3,7 @@
  */
 
 import { h } from 'vue';
+import { resolveComponent } from '@lljj/vjsf-utils/vue3Utils';
 
 import { orderProperties, getUiOptions } from '@lljj/vjsf-utils/formUtils';
 import { computedCurPath, getPathVal } from '@lljj/vjsf-utils/vueUtils';
@@ -68,63 +69,53 @@ export default {
 
             return h(
                 // onlyShowWhenDependent 只渲染被依赖的属性
-                (isDependency && onlyShowIfDependent && !curDependent) ? null : SchemaField,
+                (isDependency && onlyShowIfDependent && !curDependent) ? null : resolveComponent(SchemaField),
                 {
                     key: name,
-                    props: {
-                        ...props,
-                        schema: props.schema.properties[name],
-                        uiSchema: props.uiSchema[name],
-                        errorSchema: props.errorSchema[name],
-                        required: required || curDependent,
-                        curNodePath: computedCurPath(props.curNodePath, name)
-                    }
+                    ...props,
+                    schema: props.schema.properties[name],
+                    uiSchema: props.uiSchema[name],
+                    errorSchema: props.errorSchema[name],
+                    required: required || curDependent,
+                    curNodePath: computedCurPath(props.curNodePath, name)
                 }
             );
         });
 
         return () => h(
-            FieldGroupWrap,
+            resolveComponent(FieldGroupWrap),
             {
                 title,
                 description,
                 showTitle,
                 showDescription,
                 class: { ...fieldClass },
-                attrs: fieldAttrs,
-                style: fieldStyle
+                style: fieldStyle,
+                ...fieldAttrs
             },
             [
-                h(
-                    'template',
-                    {
-                        slot: 'default'
-                    },
-                    [
-                        ...propertiesVNodeList,
+                ...propertiesVNodeList,
 
-                        // 插入一个Widget，校验 object组 - minProperties. maxProperties. oneOf 等需要外层校验的数据
-                        props.needValidFieldGroup ? h(Widget, {
-                            key: 'validateWidget-object',
-                            class: {
-                                validateWidget: true,
-                                'validateWidget-object': true
-                            },
-                            schema: Object.entries(props.schema).reduce((preVal, [key, value]) => {
-                                if (
-                                    props.schema.additionalProperties === false
-                                    || !['properties', 'id', '$id'].includes(key)
-                                ) preVal[key] = value;
-                                return preVal;
-                            }, {}),
-                            uiSchema: props.uiSchema,
-                            errorSchema: props.errorSchema,
-                            curNodePath: props.curNodePath,
-                            rootFormData: props.rootFormData,
-                            globalOptions: props.globalOptions
-                        }) : null
-                    ]
-                )
+                // 插入一个Widget，校验 object组 - minProperties. maxProperties. oneOf 等需要外层校验的数据
+                props.needValidFieldGroup ? h(resolveComponent(Widget), {
+                    key: 'validateWidget-object',
+                    class: {
+                        validateWidget: true,
+                        'validateWidget-object': true
+                    },
+                    schema: Object.entries(props.schema).reduce((preVal, [key, value]) => {
+                        if (
+                            props.schema.additionalProperties === false
+                            || !['properties', 'id', '$id'].includes(key)
+                        ) preVal[key] = value;
+                        return preVal;
+                    }, {}),
+                    uiSchema: props.uiSchema,
+                    errorSchema: props.errorSchema,
+                    curNodePath: props.curNodePath,
+                    rootFormData: props.rootFormData,
+                    globalOptions: props.globalOptions
+                }) : null
             ]
         );
     }

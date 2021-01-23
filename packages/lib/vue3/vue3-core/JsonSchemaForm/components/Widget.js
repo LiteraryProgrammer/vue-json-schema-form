@@ -2,11 +2,14 @@
  * Created by Liu.Jun on 2020/4/23 11:24.
  */
 
+import { computed, h } from 'vue';
+
 import {
     isRootNodePath, path2prop, getPathVal, setPathVal
 } from '@lljj/vjsf-utils/vueUtils';
 
 import { validateFormDataAndTransformMsg } from '@lljj/vjsf-utils/schema/validate';
+import { resolveComponent } from '@lljj/vjsf-utils/vue3Utils';
 
 export default {
     name: 'Widget',
@@ -128,53 +131,49 @@ export default {
         getWidget: null,
         globalOptions: null // 全局配置
     },
-    computed: {
-        value: {
+    emits: ['change'],
+    setup(props, { emit }) {
+        const widgetValue = computed({
             get() {
-                if (this.isFormData) {
-                    return getPathVal(this.rootFormData, this.curNodePath);
-                }
-                return this.curValue;
+                if (props.isFormData) return getPathVal(props.rootFormData, props.curNodePath);
+
+                return props.curValue;
             },
             set(value) {
                 // 大多组件删除为空值会重置为null。
-                const trueValue = (value === '' || value === null) ? this.emptyValue : value;
-                if (this.isFormData) {
-                    setPathVal(this.rootFormData, this.curNodePath, trueValue);
+                const trueValue = (value === '' || value === null) ? props.emptyValue : value;
+                if (props.isFormData) {
+                    setPathVal(props.rootFormData, props.curNodePath, trueValue);
                 }
-                this.$emit('onChange', trueValue);
+                emit('change', trueValue);
             }
-        }
-    },
-    created() {
+        });
+
         // 枚举类型默认值为第一个选项
-        if (this.uiProps.enumOptions
-            && this.uiProps.enumOptions.length > 0
-            && this.value === undefined
-            && this.value !== this.uiProps.enumOptions[0]
+        if (props.uiProps.enumOptions
+            && props.uiProps.enumOptions.length > 0
+            && widgetValue.value === undefined
+            && widgetValue.value !== props.uiProps.enumOptions[0]
         ) {
             // array 渲染为多选框时默认为空数组
-            if (this.schema.items) {
-                this.value = [];
-            } else if (this.required) {
-                this.value = this.uiProps.enumOptions[0].value;
+            if (props.schema.items) {
+                widgetValue.value = [];
+            } else if (props.required) {
+                widgetValue.value = props.uiProps.enumOptions[0].value;
             }
         }
-    },
-    render(h) {
-        const self = this;
 
         // 判断是否为根节点
-        const isRootNode = isRootNodePath(this.curNodePath);
+        const isRootNode = isRootNodePath(props.curNodePath);
 
         // labelPosition left/right
-        const miniDesModel = self.formProps && self.formProps.labelPosition !== 'top';
+        const miniDesModel = props.formProps && props.formProps.labelPosition !== 'top';
 
-        const descriptionVNode = (self.description) ? h(
+        const descriptionVNode = (props.description) ? h(
             'p',
             {
                 domProps: {
-                    innerHTML: self.description
+                    innerHTML: props.description
                 },
                 class: {
                     genFromWidget_des: true
@@ -182,9 +181,8 @@ export default {
             },
         ) : null;
 
-        const { COMPONENT_MAP, ICONS_MAP } = self.globalOptions;
-
-        const miniDescriptionVNode = (miniDesModel && descriptionVNode) ? h(COMPONENT_MAP.popover, {
+        const { COMPONENT_MAP, ICONS_MAP } = props.globalOptions;
+        const miniDescriptionVNode = (miniDesModel && descriptionVNode) ? h(resolveComponent(COMPONENT_MAP.popover), {
             style: {
                 margin: '0 2px',
                 fontSize: '16px',
@@ -202,121 +200,114 @@ export default {
             })
         ]) : null;
 
-
         // form-item style
         const formItemStyle = {
-            ...self.fieldStyle,
-            ...(self.width ? {
-                width: self.width,
-                flexBasis: self.width,
+            ...props.fieldStyle,
+            ...(props.width ? {
+                width: props.width,
+                flexBasis: props.width,
                 paddingRight: '10px'
             } : {})
         };
 
-        return h(
-            COMPONENT_MAP.formItem,
+        return () => h(
+            resolveComponent(COMPONENT_MAP.formItem),
             {
                 class: {
-                    ...self.fieldClass,
+                    ...props.fieldClass,
                     genFormItem: true
                 },
                 style: formItemStyle,
-                attrs: self.fieldAttrs,
-                props: {
-                    labelWidth: self.labelWidth,
-                    ...this.isFormData ? {
-                        // 这里对根节点打特殊标志，绕过elementUi无prop属性不校验
-                        prop: isRootNode ? '__$$root' : path2prop(self.curNodePath),
-                        rules: [
-                            {
-                                validator(rule, value, callback) {
-                                    if (isRootNode) value = self.rootFormData;
+                ...props.fieldAttrs,
 
-                                    // 校验是通过对schema逐级展开校验 这里只捕获根节点错误
-                                    const errors = validateFormDataAndTransformMsg({
-                                        formData: value,
-                                        schema: self.$props.schema,
-                                        uiSchema: self.$props.uiSchema,
-                                        customFormats: self.$props.customFormats,
-                                        errorSchema: self.errorSchema,
-                                        required: self.required,
-                                        propPath: path2prop(self.curNodePath)
+                labelWidth: props.labelWidth,
+                ...props.isFormData ? {
+                    // 这里对根节点打特殊标志，绕过elementUi无prop属性不校验
+                    prop: isRootNode ? '__$$root' : path2prop(props.curNodePath),
+                    rules: [
+                        {
+                            validator(rule, value, callback) {
+                                if (isRootNode) value = props.rootFormData;
+
+                                // 校验是通过对schema逐级展开校验 这里只捕获根节点错误
+                                const errors = validateFormDataAndTransformMsg({
+                                    formData: value,
+                                    schema: props.schema,
+                                    uiSchema: props.uiSchema,
+                                    customFormats: props.customFormats,
+                                    errorSchema: props.errorSchema,
+                                    required: props.required,
+                                    propPath: path2prop(props.curNodePath)
+                                });
+                                if (errors.length > 0) return callback(errors[0].message);
+
+                                // customRule 如果存在自定义校验
+                                const curCustomRule = props.customRule;
+                                if (curCustomRule && (typeof curCustomRule === 'function')) {
+                                    return curCustomRule({
+                                        field: props.curNodePath,
+                                        value,
+                                        rootFormData: props.rootFormData,
+                                        callback
                                     });
-                                    if (errors.length > 0) return callback(errors[0].message);
+                                }
 
-                                    // customRule 如果存在自定义校验
-                                    const curCustomRule = self.$props.customRule;
-                                    if (curCustomRule && (typeof curCustomRule === 'function')) {
-                                        return curCustomRule({
-                                            field: self.curNodePath,
-                                            value,
-                                            rootFormData: self.rootFormData,
-                                            callback
-                                        });
-                                    }
-
-                                    return callback();
-                                },
-                                trigger: 'blur'
-                            }
-                        ]
-                    } : {},
-                },
+                                return callback();
+                            },
+                            trigger: 'blur'
+                        }
+                    ]
+                } : {},
                 scopedSlots: {
                     // 错误只能显示一行，多余...
-                    error: props => (props.error ? h('p', {
+                    error: slotProps => (slotProps.error ? h('p', {
                         class: {
                             formItemErrorBox: true
                         },
-                        attrs: {
-                            title: props.error
-                        }
-                    }, [props.error]) : null),
+                        title: slotProps.error
+                    }, [slotProps.error]) : null),
                 },
             },
             [
-                self.label ? h('span', {
+                props.label ? h('span', {
                     slot: 'label',
                     class: {
                         genFormLabel: true,
-                        genFormItemRequired: self.required,
+                        genFormItemRequired: props.required,
                     },
                 }, [
-                    `${self.label}`,
+                    `${props.label}`,
                     miniDescriptionVNode,
-                    `${(self.formProps && self.formProps.labelSuffix) || ''}`
+                    `${(props.formProps && props.formProps.labelSuffix) || ''}`
                 ]) : null,
 
                 // description
                 // 非mini模式显示 description
                 !miniDesModel ? descriptionVNode : null,
                 h( // 关键输入组件
-                    self.widget,
+                    resolveComponent(props.widget),
                     {
-                        style: self.widgetStyle,
-                        class: self.widgetClass,
-                        attrs: {
-                            ...self.widgetAttrs,
-                            ...self.uiProps,
-                            value: this.value, // v-model
-                        },
+                        style: props.widgetStyle,
+                        class: props.widgetClass,
+
+                        ...props.widgetAttrs,
+                        ...props.uiProps,
+                        modelValue: widgetValue.value, // v-model
                         ref: 'widgetRef',
-                        on: {
-                            'hook:mounted': function widgetMounted() {
-                                // 提供一种特殊的配置 允许直接访问到 widget vm
-                                if (self.getWidget && typeof self.getWidget === 'function') {
-                                    self.getWidget.call(null, self.$refs.widgetRef);
-                                }
-                            },
-                            input(event) {
-                                const formatValue = self.formatValue(event);
-                                // 默认用户输入变了都是需要更新form数据保持同步，唯一特例 input number
-                                // 为了兼容 number 小数点后0结尾的数据场景
-                                // 比如 1. 1.010 这类特殊数据输入是不需要触发 新值的设置，否则会导致schema校验为非数字
-                                // 但由于element为了解另外的问题，会在nextTick时强制同步dom的值等于vm的值所以无法通过这种方式来hack，这里旧的这份逻辑依旧保留 不过update一直为true
-                                if (formatValue.update && self.value !== formatValue.value) {
-                                    self.value = formatValue.value;
-                                }
+                        'onUpdate:modelValue': function updateModelValue(event) {
+                            const formatValue = props.formatValue(event);
+                            // 默认用户输入变了都是需要更新form数据保持同步，唯一特例 input number
+                            // 为了兼容 number 小数点后0结尾的数据场景
+                            // 比如 1. 1.010 这类特殊数据输入是不需要触发 新值的设置，否则会导致schema校验为非数字
+                            // 但由于element为了解另外的问题，会在nextTick时强制同步dom的值等于vm的值所以无法通过这种方式来hack，这里旧的这份逻辑依旧保留 不过update一直为true
+                            if (formatValue.update && widgetValue.value !== formatValue.value) {
+                                widgetValue.value = formatValue.value;
+                            }
+                        },
+                        'onHook:mounted': function onWidgetMounted() {
+                            // 提供一种特殊的配置 允许直接访问到 widget vm
+                            if (props.getWidget && typeof props.getWidget === 'function') {
+                                props.getWidget.call(null, props.$refs.widgetRef);
                             }
                         }
                     }
