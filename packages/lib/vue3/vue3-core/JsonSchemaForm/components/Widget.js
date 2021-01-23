@@ -60,14 +60,6 @@ export default {
             type: null,
             default: undefined
         },
-        // 部分场景可能需要格式化值，如vue .number 修饰符
-        formatValue: {
-            type: [Function],
-            default: val => ({
-                update: true,
-                value: val
-            })
-        },
         rootFormData: {
             type: null
         },
@@ -258,61 +250,59 @@ export default {
                         }
                     ]
                 } : {},
-                scopedSlots: {
-                    // 错误只能显示一行，多余...
-                    error: slotProps => (slotProps.error ? h('p', {
-                        class: {
-                            formItemErrorBox: true
-                        },
-                        title: slotProps.error
-                    }, [slotProps.error]) : null),
-                },
             },
-            [
-                props.label ? h('span', {
-                    slot: 'label',
+            {
+                // 错误只能显示一行，多余...
+                error: slotProps => (slotProps.error ? h('p', {
                     class: {
-                        genFormLabel: true,
-                        genFormItemRequired: props.required,
+                        formItemErrorBox: true
                     },
-                }, [
-                    `${props.label}`,
-                    miniDescriptionVNode,
-                    `${(props.formProps && props.formProps.labelSuffix) || ''}`
-                ]) : null,
+                    title: slotProps.error
+                }, [slotProps.error]) : null),
 
-                // description
-                // 非mini模式显示 description
-                !miniDesModel ? descriptionVNode : null,
-                h( // 关键输入组件
-                    resolveComponent(props.widget),
-                    {
-                        style: props.widgetStyle,
-                        class: props.widgetClass,
-
-                        ...props.widgetAttrs,
-                        ...props.uiProps,
-                        modelValue: widgetValue.value, // v-model
-                        ref: 'widgetRef',
-                        'onUpdate:modelValue': function updateModelValue(event) {
-                            const formatValue = props.formatValue(event);
-                            // 默认用户输入变了都是需要更新form数据保持同步，唯一特例 input number
-                            // 为了兼容 number 小数点后0结尾的数据场景
-                            // 比如 1. 1.010 这类特殊数据输入是不需要触发 新值的设置，否则会导致schema校验为非数字
-                            // 但由于element为了解另外的问题，会在nextTick时强制同步dom的值等于vm的值所以无法通过这种方式来hack，这里旧的这份逻辑依旧保留 不过update一直为true
-                            if (formatValue.update && widgetValue.value !== formatValue.value) {
-                                widgetValue.value = formatValue.value;
-                            }
+                label: () => [...props.label ? [
+                    h('span', {
+                        slot: 'label',
+                        class: {
+                            genFormLabel: true,
+                            genFormItemRequired: props.required,
                         },
-                        'onHook:mounted': function onWidgetMounted() {
-                            // 提供一种特殊的配置 允许直接访问到 widget vm
-                            if (props.getWidget && typeof props.getWidget === 'function') {
-                                props.getWidget.call(null, props.$refs.widgetRef);
+                    }, [
+                        `${props.label}`,
+                        ...miniDescriptionVNode ? [miniDescriptionVNode] : [],
+                        `${(props.formProps && props.formProps.labelSuffix) || ''}`
+                    ])
+                ] : []],
+                default: () => [
+                    // description
+                    // 非mini模式显示 description
+                    ...(!miniDesModel && descriptionVNode) ? [descriptionVNode] : [],
+
+                    ...props.widget ? [
+                        h( // 关键输入组件
+                            resolveComponent(props.widget),
+                            {
+                                style: props.widgetStyle,
+                                class: props.widgetClass,
+
+                                ...props.widgetAttrs,
+                                ...props.uiProps,
+                                modelValue: widgetValue.value, // v-model
+                                ref: 'widgetRef',
+                                'onUpdate:modelValue': function updateModelValue(event) {
+                                    widgetValue.value = event;
+                                },
+                                'onHook:mounted': function onWidgetMounted() {
+                                    // 提供一种特殊的配置 允许直接访问到 widget vm
+                                    if (props.getWidget && typeof props.getWidget === 'function') {
+                                        props.getWidget.call(null, props.$refs.widgetRef);
+                                    }
+                                }
                             }
-                        }
-                    }
-                )
-            ]
+                        )
+                    ] : []
+                ]
+            }
         );
     }
 };

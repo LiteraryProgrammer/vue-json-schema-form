@@ -31,21 +31,27 @@ export default {
             class: {
                 formFooter_item: true
             }
-        }, [
-            h(resolveComponent(COMPONENT_MAP.button), {
-                onClick() {
-                    emit('cancel');
-                }
-            }, props.cancelBtn),
-            h(resolveComponent(COMPONENT_MAP.button), {
-                style: {
-                    marginLeft: '10px'
-                },
-                type: 'primary',
-                onClick() {
-                    emit('submit');
-                }
-            }, props.okBtn)
-        ]);
+        }, {
+            default: () => [
+                h(resolveComponent(COMPONENT_MAP.button), {
+                    onClick() {
+                        emit('cancel');
+                    }
+                }, {
+                    default: () => props.cancelBtn
+                }),
+                h(resolveComponent(COMPONENT_MAP.button), {
+                    style: {
+                        marginLeft: '10px'
+                    },
+                    type: 'primary',
+                    onClick() {
+                        emit('submit');
+                    }
+                }, {
+                    default: () => props.okBtn
+                })
+            ]
+        });
     }
 };

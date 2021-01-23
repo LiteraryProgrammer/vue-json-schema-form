@@ -11,6 +11,9 @@ export default {
     name: 'IntegerField',
     props: vueProps,
     setup(props, { attrs }) {
-        return h(StringField, attrs);
+        return () => h(StringField, {
+            ...props,
+            ...attrs
+        });
     }
 };

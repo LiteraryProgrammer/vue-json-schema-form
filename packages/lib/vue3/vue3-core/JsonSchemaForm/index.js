@@ -26,7 +26,7 @@ export default function createForm(globalOptions = {}) {
         name: 'VueElementForm',
         props: vueProps,
         emits: ['update:modelValue', 'change', 'cancel', 'submit', 'validation-failed'],
-        setup(props, ctx) {
+        setup(props, { slots, emit }) {
             // 注册组件
             const internalInstance = getCurrentInstance();
             Object.entries(globalOptions.WIDGET_MAP.widgetComponents).forEach(
@@ -47,10 +47,10 @@ export default function createForm(globalOptions = {}) {
             // 更新formData
             const emitFormDataChange = (newValue, oldValue) => {
                 // 支持v-model ，引用类型
-                ctx.emit('update:modelValue', newValue);
+                emit('update:modelValue', newValue);
 
                 // change 事件，引用类型修改属性 newValue
-                ctx.emit('change', {
+                emit('change', {
                     newValue,
                     oldValue
                 });
@@ -86,74 +86,91 @@ export default function createForm(globalOptions = {}) {
             // 保持v-model双向数据及时性
             emitFormDataChange(formData, props.modelValue);
 
-            const defaultSlot = ctx.slots.default
-                ? ctx.slots.default({
-                    formData,
-                    formRefFn: () => formRef.value
-                })
-                : footerParams.value.show
-                    ? h(FormFooter, {
+            const getDefaultSlot = () => {
+                if (slots.default) {
+                    return slots.default({
+                        formData,
+                        formRefFn: () => formRef.value
+                    });
+                }
+
+                if (footerParams.value.show) {
+                    return h(FormFooter, {
                         globalOptions,
                         okBtn: footerParams.okBtn,
                         cancelBtn: footerParams.cancelBtn,
                         onCancel() {
-                            ctx.emit('cancel');
+                            emit('cancel');
                         },
                         onSubmit() {
                             formRef.value.validate((isValid, resData) => {
                                 if (isValid) {
-                                    return ctx.emit('submit', formData);
+                                    return emit('submit', formData);
                                 }
                                 console.warn(resData);
-                                return ctx.emit('validation-failed', resData);
+                                return emit('validation-failed', resData);
                             });
                         }
-                    }) : null;
-
-            const { layoutColumn = 1, ...formProps } = props.formProps;
-
-            const schemaProps = {
-                schema: props.schema,
-                uiSchema: props.uiSchema,
-                errorSchema: props.errorSchema,
-                customFormats: props.customFormats,
-                customRule: props.customRule,
-                rootSchema: props.schema,
-                rootFormData: formData.value, // 根节点的数据
-                curNodePath: '', // 当前节点路径
-                globalOptions, // 全局配置，差异化ui框架
-                formProps: {
-                    labelPosition: 'top',
-                    labelSuffix: '：',
-                    ...formProps,
+                    });
                 }
+
+                return [];
             };
+
+
+            const childProps = computed(() => {
+                const { layoutColumn = 1, ...formProps } = props.formProps;
+                const schemaProps = {
+                    schema: props.schema,
+                    uiSchema: props.uiSchema,
+                    errorSchema: props.errorSchema,
+                    customFormats: props.customFormats,
+                    customRule: props.customRule,
+                    rootSchema: props.schema,
+                    rootFormData: formData.value, // 根节点的数据
+                    curNodePath: '', // 当前节点路径
+                    globalOptions, // 全局配置，差异化ui框架
+                    formProps: {
+                        labelPosition: 'top',
+                        labelSuffix: '：',
+                        ...formProps,
+                    }
+                };
+
+                return {
+                    layoutColumn,
+                    schemaProps,
+                };
+            });
+
 
             return () => h(
                 resolveComponent(globalOptions.COMPONENT_MAP.form),
                 {
                     class: {
                         genFromComponent: true,
-                        [`formLabel-${schemaProps.formProps.labelPosition}`]: true,
-                        formInlineFooter: formProps.inlineFooter,
-                        formInline: formProps.inline,
+                        [`formLabel-${childProps.value.schemaProps.formProps.labelPosition}`]: true,
+                        formInlineFooter: childProps.value.schemaProps.formProps.inlineFooter,
+                        formInline: childProps.value.schemaProps.inline,
                         [`genFromComponent_${props.schema.id}Form`]: !!props.schema.id,
-                        layoutColumn: !formProps.inline,
-                        [`layoutColumn-${layoutColumn}`]: !formProps.inline
+                        layoutColumn: !childProps.value.schemaProps.inline,
+                        [`layoutColumn-${childProps.layoutColumn}`]: !childProps.value.schemaProps.inline
                     },
                     ref: formRef,
                     model: formData,
-                    ...schemaProps.formProps
+                    ...childProps.value.schemaProps.formProps
                 },
-                [
-                    h(
-                        SchemaField,
-                        {
-                            ...schemaProps
-                        }
-                    ),
-                    defaultSlot,
-                ]
+                {
+                    default: () => [
+                        h(
+                            SchemaField,
+                            {
+                                ...childProps.value.schemaProps
+                            }
+                        ),
+                        getDefaultSlot(),
+                    ]
+                }
             );
         },
     };

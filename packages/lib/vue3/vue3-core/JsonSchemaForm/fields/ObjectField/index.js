@@ -83,7 +83,7 @@ export default {
         });
 
         return () => h(
-            resolveComponent(FieldGroupWrap),
+            FieldGroupWrap,
             {
                 title,
                 description,
@@ -93,30 +93,32 @@ export default {
                 style: fieldStyle,
                 ...fieldAttrs
             },
-            [
-                ...propertiesVNodeList,
+            {
+                default: () => [
+                    ...propertiesVNodeList,
 
-                // 插入一个Widget，校验 object组 - minProperties. maxProperties. oneOf 等需要外层校验的数据
-                props.needValidFieldGroup ? h(resolveComponent(Widget), {
-                    key: 'validateWidget-object',
-                    class: {
-                        validateWidget: true,
-                        'validateWidget-object': true
-                    },
-                    schema: Object.entries(props.schema).reduce((preVal, [key, value]) => {
-                        if (
-                            props.schema.additionalProperties === false
-                            || !['properties', 'id', '$id'].includes(key)
-                        ) preVal[key] = value;
-                        return preVal;
-                    }, {}),
-                    uiSchema: props.uiSchema,
-                    errorSchema: props.errorSchema,
-                    curNodePath: props.curNodePath,
-                    rootFormData: props.rootFormData,
-                    globalOptions: props.globalOptions
-                }) : null
-            ]
+                    // 插入一个Widget，校验 object组 - minProperties. maxProperties. oneOf 等需要外层校验的数据
+                    props.needValidFieldGroup ? h(resolveComponent(Widget), {
+                        key: 'validateWidget-object',
+                        class: {
+                            validateWidget: true,
+                            'validateWidget-object': true
+                        },
+                        schema: Object.entries(props.schema).reduce((preVal, [key, value]) => {
+                            if (
+                                props.schema.additionalProperties === false
+                                || !['properties', 'id', '$id'].includes(key)
+                            ) preVal[key] = value;
+                            return preVal;
+                        }, {}),
+                        uiSchema: props.uiSchema,
+                        errorSchema: props.errorSchema,
+                        curNodePath: props.curNodePath,
+                        rootFormData: props.rootFormData,
+                        globalOptions: props.globalOptions
+                    }) : null
+                ]
+            }
         );
     }
 };
