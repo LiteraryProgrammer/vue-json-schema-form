@@ -16,68 +16,62 @@ export default {
     name: 'SchemaField',
     props: vueProps,
     setup(props) {
-        // 目前不支持schema依赖和additionalProperties 展示不需要传递formData
-        // const schema = retrieveSchema(props.schema, props.rootSchema, formData);
-        const schema = retrieveSchema(props.schema, props.rootSchema);
+        return () => {
+            // 目前不支持schema依赖和additionalProperties 展示不需要传递formData
+            // const schema = retrieveSchema(props.schema, props.rootSchema, formData);
+            const schema = retrieveSchema(props.schema, props.rootSchema);
 
-        // 当前参数
-        const curProps = {
-            ...props,
-            schema
-        };
+            // 当前参数
+            const curProps = { ...props, schema };
 
-        // 空数据
-        if (Object.keys(schema).length === 0) {
-            return null;
-        }
+            // 空数据
+            if (Object.keys(schema).length === 0) return null;
 
-        // 获取节点Ui配置渲染field组件
-        const {
-            field: fieldComponent,
-            fieldProps
-        } = getUiField(FIELDS_MAP, curProps);
+            // 获取节点Ui配置渲染field组件
+            const { field: fieldComponent, fieldProps } = getUiField(FIELDS_MAP, curProps);
 
-        // hidden
-        const hiddenWidget = isHiddenWidget({
-            schema,
-            uiSchema: props.uiSchema,
-            curNodePath: props.curNodePath,
-            rootFormData: props.rootFormData
-        });
-
-        const pathClassName = nodePath2ClassName(props.curNodePath);
-
-        if (schema.anyOf && schema.anyOf.length > 0 && !isSelect(schema)) {
-            // anyOf
-            return () => h(resolveComponent(FIELDS_MAP.anyOf), {
-                class: {
-                    [`${pathClassName}-anyOf`]: true,
-                    fieldItem: true,
-                    anyOfField: true
-                },
-                ...curProps
+            // hidden
+            const hiddenWidget = isHiddenWidget({
+                schema,
+                uiSchema: props.uiSchema,
+                curNodePath: props.curNodePath,
+                rootFormData: props.rootFormData
             });
-        } if (schema.oneOf && schema.oneOf.length > 0 && !isSelect(schema)) {
-            // oneOf
-            return () => h(resolveComponent(FIELDS_MAP.oneOf), {
-                class: {
-                    [`${pathClassName}-oneOf`]: true,
-                    fieldItem: true,
-                    oneOfField: true
-                },
-                ...curProps
-            });
-        }
 
-        return () => ((fieldComponent && !hiddenWidget) ? h(resolveComponent(fieldComponent), {
-            ...curProps,
-            fieldProps,
-            class: {
-                [lowerCase(fieldComponent.name) || fieldComponent]: true,
-                hiddenWidget,
-                fieldItem: true,
-                [pathClassName]: true
+            const pathClassName = nodePath2ClassName(props.curNodePath);
+
+            if (schema.anyOf && schema.anyOf.length > 0 && !isSelect(schema)) {
+                // anyOf
+                return () => h(resolveComponent(FIELDS_MAP.anyOf), {
+                    class: {
+                        [`${pathClassName}-anyOf`]: true,
+                        fieldItem: true,
+                        anyOfField: true
+                    },
+                    ...curProps
+                });
+            } if (schema.oneOf && schema.oneOf.length > 0 && !isSelect(schema)) {
+                // oneOf
+                return () => h(resolveComponent(FIELDS_MAP.oneOf), {
+                    class: {
+                        [`${pathClassName}-oneOf`]: true,
+                        fieldItem: true,
+                        oneOfField: true
+                    },
+                    ...curProps
+                });
             }
-        }) : null);
+
+            return (fieldComponent && !hiddenWidget) ? h(resolveComponent(fieldComponent), {
+                ...curProps,
+                fieldProps,
+                class: {
+                    [lowerCase(fieldComponent.name) || fieldComponent]: true,
+                    hiddenWidget,
+                    fieldItem: true,
+                    [pathClassName]: true
+                }
+            }) : null;
+        };
     }
 };

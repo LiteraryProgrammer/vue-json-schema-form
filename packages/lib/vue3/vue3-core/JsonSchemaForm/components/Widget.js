@@ -2,14 +2,14 @@
  * Created by Liu.Jun on 2020/4/23 11:24.
  */
 
-import { computed, h } from 'vue';
-
 import {
-    isRootNodePath, path2prop, getPathVal, setPathVal
-} from '@lljj/vjsf-utils/vueUtils';
+    computed, h, ref, watch
+} from 'vue';
 
 import { validateFormDataAndTransformMsg } from '@lljj/vjsf-utils/schema/validate';
-import { resolveComponent } from '@lljj/vjsf-utils/vue3Utils';
+import {
+    isRootNodePath, path2prop, getPathVal, setPathVal, resolveComponent
+} from '@lljj/vjsf-utils/vue3Utils';
 
 export default {
     name: 'Widget',
@@ -155,154 +155,161 @@ export default {
             }
         }
 
-        // 判断是否为根节点
-        const isRootNode = isRootNodePath(props.curNodePath);
+        // 获取到子组件实例
+        const widgetRef = ref(null);
+        // 提供一种特殊的配置 允许直接访问到 widget vm
+        if (props.getWidget && typeof props.getWidget === 'function') {
+            watch(widgetRef, () => {
+                props.getWidget.call(null, widgetRef.value);
+            });
+        }
 
-        // labelPosition left/right
-        const miniDesModel = props.formProps && props.formProps.labelPosition !== 'top';
+        return () => {
+            // 判断是否为根节点
+            const isRootNode = isRootNodePath(props.curNodePath);
 
-        const descriptionVNode = (props.description) ? h(
-            'p',
-            {
-                domProps: {
-                    innerHTML: props.description
+            // labelPosition left/right
+            const miniDesModel = props.formProps && props.formProps.labelPosition !== 'top';
+
+            const descriptionVNode = (props.description) ? h(
+                'p',
+                {
+                    innerHTML: props.description,
+                    class: {
+                        genFromWidget_des: true
+                    }
                 },
-                class: {
-                    genFromWidget_des: true
-                }
-            },
-        ) : null;
+            ) : null;
 
-        const { COMPONENT_MAP, ICONS_MAP } = props.globalOptions;
-        const miniDescriptionVNode = (miniDesModel && descriptionVNode) ? h(resolveComponent(COMPONENT_MAP.popover), {
-            style: {
-                margin: '0 2px',
-                fontSize: '16px',
-                cursor: 'pointer'
-            },
-            props: {
+            const { COMPONENT_MAP, ICONS_MAP } = props.globalOptions;
+            const miniDescriptionVNode = (miniDesModel && descriptionVNode) ? h(resolveComponent(COMPONENT_MAP.popover), {
+                style: {
+                    margin: '0 2px',
+                    fontSize: '16px',
+                    cursor: 'pointer'
+                },
                 placement: 'top',
                 trigger: 'hover'
-            }
-        }, [
-            descriptionVNode,
-            h('i', {
-                slot: 'reference',
-                class: ICONS_MAP.question
-            })
-        ]) : null;
+            }, [
+                descriptionVNode,
+                h('i', {
+                    slot: 'reference',
+                    class: ICONS_MAP.question
+                })
+            ]) : null;
 
-        // form-item style
-        const formItemStyle = {
-            ...props.fieldStyle,
-            ...(props.width ? {
-                width: props.width,
-                flexBasis: props.width,
-                paddingRight: '10px'
-            } : {})
-        };
+            // form-item style
+            const formItemStyle = {
+                ...props.fieldStyle,
+                ...(props.width ? {
+                    width: props.width,
+                    flexBasis: props.width,
+                    paddingRight: '10px'
+                } : {})
+            };
 
-        return () => h(
-            resolveComponent(COMPONENT_MAP.formItem),
-            {
-                class: {
-                    ...props.fieldClass,
-                    genFormItem: true
-                },
-                style: formItemStyle,
-                ...props.fieldAttrs,
-
-                labelWidth: props.labelWidth,
-                ...props.isFormData ? {
-                    // 这里对根节点打特殊标志，绕过elementUi无prop属性不校验
-                    prop: isRootNode ? '__$$root' : path2prop(props.curNodePath),
-                    rules: [
-                        {
-                            validator(rule, value, callback) {
-                                if (isRootNode) value = props.rootFormData;
-
-                                // 校验是通过对schema逐级展开校验 这里只捕获根节点错误
-                                const errors = validateFormDataAndTransformMsg({
-                                    formData: value,
-                                    schema: props.schema,
-                                    uiSchema: props.uiSchema,
-                                    customFormats: props.customFormats,
-                                    errorSchema: props.errorSchema,
-                                    required: props.required,
-                                    propPath: path2prop(props.curNodePath)
-                                });
-                                if (errors.length > 0) return callback(errors[0].message);
-
-                                // customRule 如果存在自定义校验
-                                const curCustomRule = props.customRule;
-                                if (curCustomRule && (typeof curCustomRule === 'function')) {
-                                    return curCustomRule({
-                                        field: props.curNodePath,
-                                        value,
-                                        rootFormData: props.rootFormData,
-                                        callback
-                                    });
-                                }
-
-                                return callback();
-                            },
-                            trigger: 'blur'
-                        }
-                    ]
-                } : {},
-            },
-            {
-                // 错误只能显示一行，多余...
-                error: slotProps => (slotProps.error ? h('p', {
+            return h(
+                resolveComponent(COMPONENT_MAP.formItem),
+                {
                     class: {
-                        formItemErrorBox: true
+                        ...props.fieldClass,
+                        genFormItem: true
                     },
-                    title: slotProps.error
-                }, [slotProps.error]) : null),
+                    style: formItemStyle,
+                    ...props.fieldAttrs,
 
-                label: () => [...props.label ? [
-                    h('span', {
-                        slot: 'label',
-                        class: {
-                            genFormLabel: true,
-                            genFormItemRequired: props.required,
-                        },
-                    }, [
-                        `${props.label}`,
-                        ...miniDescriptionVNode ? [miniDescriptionVNode] : [],
-                        `${(props.formProps && props.formProps.labelSuffix) || ''}`
-                    ])
-                ] : []],
-                default: () => [
-                    // description
-                    // 非mini模式显示 description
-                    ...(!miniDesModel && descriptionVNode) ? [descriptionVNode] : [],
-
-                    ...props.widget ? [
-                        h( // 关键输入组件
-                            resolveComponent(props.widget),
+                    labelWidth: props.labelWidth,
+                    ...props.isFormData ? {
+                        // 这里对根节点打特殊标志，绕过elementUi无prop属性不校验
+                        prop: isRootNode ? '__$$root' : path2prop(props.curNodePath),
+                        rules: [
                             {
-                                style: props.widgetStyle,
-                                class: props.widgetClass,
+                                validator(rule, value, callback) {
+                                    if (isRootNode) value = props.rootFormData;
 
-                                ...props.widgetAttrs,
-                                ...props.uiProps,
-                                modelValue: widgetValue.value, // v-model
-                                ref: 'widgetRef',
-                                'onUpdate:modelValue': function updateModelValue(event) {
-                                    widgetValue.value = event;
+                                    // 校验是通过对schema逐级展开校验 这里只捕获根节点错误
+                                    const errors = validateFormDataAndTransformMsg({
+                                        formData: value,
+                                        schema: props.schema,
+                                        uiSchema: props.uiSchema,
+                                        customFormats: props.customFormats,
+                                        errorSchema: props.errorSchema,
+                                        required: props.required,
+                                        propPath: path2prop(props.curNodePath)
+                                    });
+                                    if (errors.length > 0) return callback(errors[0].message);
+
+                                    // customRule 如果存在自定义校验
+                                    const curCustomRule = props.customRule;
+                                    if (curCustomRule && (typeof curCustomRule === 'function')) {
+                                        return curCustomRule({
+                                            field: props.curNodePath,
+                                            value,
+                                            rootFormData: props.rootFormData,
+                                            callback
+                                        });
+                                    }
+
+                                    return callback();
                                 },
-                                'onHook:mounted': function onWidgetMounted() {
-                                    // 提供一种特殊的配置 允许直接访问到 widget vm
-                                    if (props.getWidget && typeof props.getWidget === 'function') {
-                                        props.getWidget.call(null, props.$refs.widgetRef);
+                                trigger: 'blur'
+                            }
+                        ]
+                    } : {},
+                },
+                {
+                    // 错误只能显示一行，多余...
+                    error: slotProps => (slotProps.error ? h('p', {
+                        class: {
+                            formItemErrorBox: true
+                        },
+                        title: slotProps.error
+                    }, [slotProps.error]) : null),
+
+                    // label
+                    /*
+                        TODO:这里slot如果从无到有会导致无法正常渲染出元素 怀疑是vue3 bug
+                        如果使用 error 的形式渲染，ElementPlus label labelWrap 未做判断，使用 slots.default?.() 会得到 undefined
+                    */
+                    ...props.label ? {
+                        label: () => h('span', {
+                            class: {
+                                genFormLabel: true,
+                                genFormItemRequired: props.required,
+                            },
+                        }, [
+                            `${props.label}`,
+                            ...miniDescriptionVNode ? [miniDescriptionVNode] : [],
+                            `${(props.formProps && props.formProps.labelSuffix) || ''}`
+                        ])
+                    } : {},
+
+                    // default
+                    default: () => [
+                        // description
+                        // 非mini模式显示 description
+                        ...(!miniDesModel && descriptionVNode) ? [descriptionVNode] : [],
+
+                        ...props.widget ? [
+                            h( // 关键输入组件
+                                resolveComponent(props.widget),
+                                {
+                                    style: props.widgetStyle,
+                                    class: props.widgetClass,
+
+                                    ...props.widgetAttrs,
+                                    ...props.uiProps,
+                                    modelValue: widgetValue.value, // v-model
+                                    ref: widgetRef,
+                                    'onUpdate:modelValue': function updateModelValue(event) {
+                                        widgetValue.value = event;
                                     }
                                 }
-                            }
-                        )
-                    ] : []
-                ]
-            }
-        );
+                            )
+                        ] : []
+                    ]
+                }
+            );
+        };
     }
 };

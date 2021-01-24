@@ -33,8 +33,8 @@ export default function createForm(globalOptions = {}) {
                 ([componentName, component]) => internalInstance.appContext.app.component(componentName, component)
             );
 
-            // formData
-            const formData = ref(getDefaultFormState(props.schema, props.value, props.schema));
+            // rootFormData
+            const rootFormData = ref(getDefaultFormState(props.schema, props.modelValue, props.schema));
             const footerParams = computed(() => ({
                 show: true,
                 okBtn: '保存',
@@ -59,15 +59,15 @@ export default function createForm(globalOptions = {}) {
             // 更新props
             const willReceiveProps = (newVal, oldVal) => {
                 if (!deepEquals(newVal, oldVal)) {
-                    const tempVal = getDefaultFormState(props.schema, props.value, props.schema);
-                    if (!deepEquals(formData.value, tempVal)) {
-                        formData.value = tempVal;
+                    const tempVal = getDefaultFormState(props.schema, props.modelValue, props.schema);
+                    if (!deepEquals(rootFormData.value, tempVal)) {
+                        rootFormData.value = tempVal;
                     }
                 }
             };
 
             // emit v-model，同步值
-            watch(formData, (newValue, oldValue) => {
+            watch(rootFormData, (newValue, oldValue) => {
                 emitFormDataChange(newValue, oldValue);
             }, {
                 deep: true
@@ -84,12 +84,12 @@ export default function createForm(globalOptions = {}) {
             });
 
             // 保持v-model双向数据及时性
-            emitFormDataChange(formData, props.modelValue);
+            emitFormDataChange(rootFormData.value, props.modelValue);
 
             const getDefaultSlot = () => {
                 if (slots.default) {
                     return slots.default({
-                        formData,
+                        formData: rootFormData,
                         formRefFn: () => formRef.value
                     });
                 }
@@ -105,7 +105,7 @@ export default function createForm(globalOptions = {}) {
                         onSubmit() {
                             formRef.value.validate((isValid, resData) => {
                                 if (isValid) {
-                                    return emit('submit', formData);
+                                    return emit('submit', rootFormData);
                                 }
                                 console.warn(resData);
                                 return emit('validation-failed', resData);
@@ -127,7 +127,7 @@ export default function createForm(globalOptions = {}) {
                     customFormats: props.customFormats,
                     customRule: props.customRule,
                     rootSchema: props.schema,
-                    rootFormData: formData.value, // 根节点的数据
+                    rootFormData: rootFormData.value, // 根节点的数据
                     curNodePath: '', // 当前节点路径
                     globalOptions, // 全局配置，差异化ui框架
                     formProps: {
@@ -143,7 +143,6 @@ export default function createForm(globalOptions = {}) {
                 };
             });
 
-
             return () => h(
                 resolveComponent(globalOptions.COMPONENT_MAP.form),
                 {
@@ -154,10 +153,10 @@ export default function createForm(globalOptions = {}) {
                         formInline: childProps.value.schemaProps.inline,
                         [`genFromComponent_${props.schema.id}Form`]: !!props.schema.id,
                         layoutColumn: !childProps.value.schemaProps.inline,
-                        [`layoutColumn-${childProps.layoutColumn}`]: !childProps.value.schemaProps.inline
+                        [`layoutColumn-${childProps.value.layoutColumn}`]: !childProps.value.schemaProps.inline
                     },
                     ref: formRef,
-                    model: formData,
+                    model: rootFormData,
                     ...childProps.value.schemaProps.formProps
                 },
                 {

@@ -27,7 +27,7 @@ export default {
         // globalOptions 不需要响应式
         const { globalOptions: { COMPONENT_MAP } } = props;
 
-        return () => h(COMPONENT_MAP.formItem, {
+        return () => h(resolveComponent(COMPONENT_MAP.formItem), {
             class: {
                 formFooter_item: true
             }
