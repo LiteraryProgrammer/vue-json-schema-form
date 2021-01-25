@@ -2,9 +2,12 @@
  * Created by Liu.Jun on 2020/4/24 16:47.
  */
 
+import { h, computed } from 'vue';
+
 // 支持数字排序 ，新增 ，删除等操作
 export default {
     name: 'ArrayOrderList',
+    emits: ['arrayOperate'],
     props: {
         // 需要被排序的VNode list
         vNodeList: {
@@ -44,9 +47,10 @@ export default {
         },
         globalOptions: null
     },
-    computed: {
-        canAdd() {
-            const { addable, maxItems, vNodeList } = this.$props;
+    setup(props, { emit }) {
+        // 是否可添加
+        const canAdd = computed(() => {
+            const { addable, maxItems, vNodeList } = props;
             // 配置不可添加
             if (!addable) return false;
 
@@ -55,10 +59,12 @@ export default {
                 return vNodeList.length < maxItems;
             }
             return true;
-        },
-        canRemove() {
-            const { removable, minItems, vNodeList } = this.$props;
-            // 配置不可添加
+        });
+
+        // 是否可移除
+        const canRemove = computed(() => {
+            const { removable, minItems, vNodeList } = props;
+            // 配置不可移除
             if (!removable) return false;
 
             if (minItems !== undefined) {
@@ -66,68 +72,65 @@ export default {
             }
 
             return true;
-        }
-    },
-    render(h) {
-        // 没有数据，且不能添加不渲染该组件
-        if (this.vNodeList <= 0 && !this.addable) return null;
+        });
 
-        const { ICONS_MAP } = this.globalOptions;
+        return () => {
+            // 没有数据，且不能添加不渲染该组件
+            if (props.vNodeList.length <= 0 && !props.addable) return null;
 
-        // 是否可继续添加元素
-        return h(
-            'div',
-            {
-                class: {
-                    arrayOrderList: true
-                }
-            },
-            this.vNodeList.map(({ key, vNode: VnodeItem }, index) => {
-                const trueIndex = this.tupleItemsLength + index;
-                const indexNumber = index + 1;
-                return h(
-                    'div',
-                    {
-                        key,
-                        class: {
-                            arrayOrderList_item: true
-                        }
-                    },
-                    [
-                        this.showIndexNumber ? h('div', {
+            const { ICONS_MAP } = props.globalOptions;
+
+            // 是否可继续添加元素
+            return h(
+                'div',
+                {
+                    class: {
+                        arrayOrderList: true
+                    }
+                },
+                props.vNodeList.map(({ key, vNode: VNodeItem }, index) => {
+                    const trueIndex = props.tupleItemsLength + index;
+                    const indexNumber = index + 1;
+                    return h(
+                        'div',
+                        {
+                            key,
                             class: {
-                                arrayListItem_index: true
+                                arrayOrderList_item: true
                             }
-                        }, indexNumber) : null,
-                        h(
-                            'div',
-                            {
+                        },
+                        [
+                            props.showIndexNumber ? h('div', {
                                 class: {
-                                    arrayListItem_operateTool: true
+                                    arrayListItem_index: true
                                 }
-                            },
-                            [
-                                h(
-                                    'button',
-                                    {
-                                        // 配置不可排序不显示排序按钮
-                                        style: {
-                                            ...(!this.sortable ? {
-                                                display: 'none'
-                                            } : {})
-                                        },
-                                        attrs: {
+                            }, indexNumber) : null,
+                            h(
+                                'div',
+                                {
+                                    class: {
+                                        arrayListItem_operateTool: true
+                                    }
+                                },
+                                [
+                                    h(
+                                        'button',
+                                        {
+                                            // 配置不可排序不显示排序按钮
+                                            style: {
+                                                ...(!props.sortable ? {
+                                                    display: 'none'
+                                                } : {})
+                                            },
+                                            class: {
+                                                arrayListItem_btn: true,
+                                                'arrayListItem_orderBtn-top': true,
+                                                [ICONS_MAP.moveUp]: true,
+                                            },
                                             type: 'button',
-                                            disabled: !this.sortable || index === 0
-                                        },
-                                        class: {
-                                            arrayListItem_btn: true,
-                                            'arrayListItem_orderBtn-top': true,
-                                            [ICONS_MAP.moveUp]: true,
-                                        },
-                                        on: {
-                                            click: () => {
-                                                this.$emit('onArrayOperate', {
+                                            disabled: !props.sortable || index === 0,
+                                            onClick: () => {
+                                                emit('arrayOperate', {
                                                     command: 'moveUp',
                                                     data: {
                                                         index: trueIndex
@@ -135,29 +138,26 @@ export default {
                                                 });
                                             }
                                         }
-                                    }
-                                ),
-                                h(
-                                    'button',
-                                    {
-                                        // 配置不可排序不显示排序按钮
-                                        style: {
-                                            ...(!this.sortable ? {
-                                                display: 'none'
-                                            } : {})
-                                        },
-                                        attrs: {
+                                    ),
+                                    h(
+                                        'button',
+                                        {
+                                            // 配置不可排序不显示排序按钮
+                                            style: {
+                                                ...(!props.sortable ? {
+                                                    display: 'none'
+                                                } : {})
+                                            },
+                                            class: {
+                                                arrayListItem_btn: true,
+                                                'arrayListItem_orderBtn-bottom': true,
+                                                [ICONS_MAP.moveDown]: true,
+                                            },
+
                                             type: 'button',
-                                            disabled: !this.sortable || index === this.vNodeList.length - 1
-                                        },
-                                        class: {
-                                            arrayListItem_btn: true,
-                                            'arrayListItem_orderBtn-bottom': true,
-                                            [ICONS_MAP.moveDown]: true,
-                                        },
-                                        on: {
-                                            click: () => {
-                                                this.$emit('onArrayOperate', {
+                                            disabled: !props.sortable || index === props.vNodeList.length - 1,
+                                            onClick: () => {
+                                                emit('arrayOperate', {
                                                     command: 'moveDown',
                                                     data: {
                                                         index: trueIndex
@@ -165,92 +165,85 @@ export default {
                                                 });
                                             }
                                         }
-                                    }
-                                ),
-                                h(
-                                    'button',
-                                    {
-                                        // 配置不可移除不显示移除按钮
-                                        style: {
-                                            ...(!this.removable ? {
-                                                display: 'none'
-                                            } : {})
-                                        },
-                                        attrs: {
+                                    ),
+                                    h(
+                                        'button',
+                                        {
+                                            // 配置不可移除不显示移除按钮
+                                            style: {
+                                                ...(!props.removable ? {
+                                                    display: 'none'
+                                                } : {})
+                                            },
+                                            class: {
+                                                arrayListItem_btn: true,
+                                                'arrayListItem_btn-delete': true,
+                                                [ICONS_MAP.close]: true,
+                                            },
                                             type: 'button',
-                                            disabled: !this.canRemove
-                                        },
-                                        class: {
-                                            arrayListItem_btn: true,
-                                            'arrayListItem_btn-delete': true,
-                                            [ICONS_MAP.close]: true,
-                                        },
-                                        on: {
-                                            click: () => {
-                                                this.$emit('onArrayOperate', {
+                                            disabled: !canRemove.value,
+                                            onClick: () => {
+                                                emit('arrayOperate', {
                                                     command: 'remove',
                                                     data: {
                                                         index: trueIndex
                                                     }
                                                 });
                                             }
-                                        }
-                                    },
-                                )
-                            ]
-                        ),
-                        h(
-                            'div',
-                            {
-                                class: {
-                                    arrayListItem_content: true
-                                }
+                                        },
+                                    )
+                                ]
+                            ),
+                            h(
+                                'div',
+                                {
+                                    class: {
+                                        arrayListItem_content: true
+                                    }
+                                },
+                                [VNodeItem]
+                            )
+                        ]
+                    );
+                }).concat([
+                    h(
+                        'p',
+                        {
+                            style: {
+                                ...(!canAdd.value ? {
+                                    display: 'none'
+                                } : {})
                             },
-                            [VnodeItem]
-                        )
-                    ]
-                );
-            }).concat([
-                h(
-                    'p',
-                    {
-                        style: {
-                            ...(!this.canAdd ? {
-                                display: 'none'
-                            } : {})
+                            class: {
+                                arrayOrderList_bottomAddBtn: true,
+                            }
                         },
-                        class: {
-                            arrayOrderList_bottomAddBtn: true,
-                        }
-                    },
-                    [
-                        h(
-                            'button',
-                            {
-                                attrs: {
-                                    type: 'button'
-                                },
-                                class: {
-                                    bottomAddBtn: true,
-                                    'is-plain': true,
-                                    genFormBtn: true
-                                },
-                                on: {
-                                    click: () => {
-                                        this.$emit('onArrayOperate', {
+                        [
+                            h(
+                                'button',
+                                {
+                                    class: {
+                                        bottomAddBtn: true,
+                                        'is-plain': true,
+                                        genFormBtn: true
+                                    },
+                                    type: 'button',
+                                    onClick: () => {
+                                        emit('arrayOperate', {
                                             command: 'add'
                                         });
                                     }
-                                }
-                            },
-                            [
-                                h('i', { class: [ICONS_MAP.plus], style: { marginRight: '5px' } }),
-                                this.maxItems ? `( ${this.vNodeList.length} / ${this.maxItems} )` : ''
-                            ]
-                        ),
-                    ]
-                ),
-            ])
-        );
+                                },
+                                [
+                                    h('i', { class: [ICONS_MAP.plus], style: { marginRight: '5px' } }),
+                                    props.maxItems ? `( ${props.vNodeList.length} / ${props.maxItems} )` : ''
+                                ]
+                            ),
+                        ]
+                    ),
+                ])
+            );
+        };
+
     }
 };

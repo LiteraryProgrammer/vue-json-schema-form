@@ -2,6 +2,7 @@
  * Created by Liu.Jun on 2020/9/16 10:25.
  */
 
+import { h } from 'vue';
 import { getWidgetConfig } from '@lljj/vjsf-utils/formUtils';
 import vueProps from '../../props';
 import Widget from '../../../components/Widget';
@@ -9,11 +10,10 @@ import Widget from '../../../components/Widget';
 export default {
     name: 'ArrayFieldSpecialFormat',
     props: vueProps,
-    functional: true,
-    render(h, context) {
+    setup(props, { attrs }) {
         const {
             schema, uiSchema, curNodePath, rootFormData, globalOptions
-        } = context.props;
+        } = props;
         const widgetConfig = getWidgetConfig({
             schema: {
                 'ui:widget': globalOptions.WIDGET_MAP.formats[schema.format],
@@ -27,11 +27,9 @@ export default {
         return h(
             Widget,
             {
-                ...context.data,
-                props: {
-                    ...context.props,
-                    ...widgetConfig
-                }
+                ...attrs,
+                ...props,
+                ...widgetConfig
             }
         );
     }
