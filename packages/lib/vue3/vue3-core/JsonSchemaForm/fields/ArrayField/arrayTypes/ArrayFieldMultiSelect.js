@@ -14,7 +14,6 @@ import Widget from '../../../components/Widget';
 
 export default {
     name: 'ArrayFieldMultiSelect',
-    functional: true,
     props: {
         ...vueProps
     },

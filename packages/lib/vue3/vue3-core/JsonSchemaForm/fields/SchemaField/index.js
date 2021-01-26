@@ -4,7 +4,7 @@
 
 import { h } from 'vue';
 
-import { getUiField, isSelect, isHiddenWidget } from '@lljj/vjsf-utils/formUtils';
+import { getUiField, isHiddenWidget, isSelect } from '@lljj/vjsf-utils/formUtils';
 import { nodePath2ClassName } from '@lljj/vjsf-utils/vueUtils';
 import { lowerCase } from '@lljj/vjsf-utils/utils';
 import retrieveSchema from '@lljj/vjsf-utils/schema/retriev';
@@ -42,7 +42,7 @@ export default {
 
             if (schema.anyOf && schema.anyOf.length > 0 && !isSelect(schema)) {
                 // anyOf
-                return () => h(resolveComponent(FIELDS_MAP.anyOf), {
+                return h(resolveComponent(FIELDS_MAP.anyOf), {
                     class: {
                         [`${pathClassName}-anyOf`]: true,
                         fieldItem: true,
@@ -52,7 +52,7 @@ export default {
                 });
             } if (schema.oneOf && schema.oneOf.length > 0 && !isSelect(schema)) {
                 // oneOf
-                return () => h(resolveComponent(FIELDS_MAP.oneOf), {
+                return h(resolveComponent(FIELDS_MAP.oneOf), {
                     class: {
                         [`${pathClassName}-oneOf`]: true,
                         fieldItem: true,

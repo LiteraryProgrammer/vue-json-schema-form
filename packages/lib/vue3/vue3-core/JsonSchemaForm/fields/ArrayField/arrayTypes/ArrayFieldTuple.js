@@ -2,6 +2,8 @@
  * Created by Liu.Jun on 2020/4/24 11:56.
  */
 
+import { h } from 'vue';
+
 import { allowAdditionalItems, getUiOptions, replaceArrayIndex } from '@lljj/vjsf-utils/formUtils';
 import getDefaultFormState from '@lljj/vjsf-utils/schema/getDefaultFormState';
 import { computedCurPath } from '@lljj/vjsf-utils/vueUtils';
@@ -21,20 +23,18 @@ export default {
             default: () => []
         }
     },
-    created() {
-        this.fixItemsFormData();
-    },
-    methods: {
+    emits: ['arrayOperate'],
+    setup(props, { emit, attrs }) {
         // 兼容数据 长度不足的的场景
-        fixItemsFormData() {
-            const isNoArray = !Array.isArray(this.itemsFormData);
-            if (isNoArray || this.itemsFormData.length < this.schema.items.length) {
+        const fixItemsFormData = () => {
+            const isNoArray = !Array.isArray(props.itemsFormData);
+            if (isNoArray || props.itemsFormData.length < props.schema.items.length) {
                 // 这里需要补齐默认数据，计算出需要的数据
-                const curSchemaState = getDefaultFormState(this.schema, undefined, this.rootSchema);
+                const curSchemaState = getDefaultFormState(props.schema, undefined, props.rootSchema);
 
                 if (isNoArray) {
                     // 数据修复 - 重置一个新的值
-                    this.$emit('onArrayOperate', {
+                    emit('arrayOperate', {
                         command: 'setNewTarget',
                         data: {
                             newTarget: curSchemaState
@@ -42,75 +42,73 @@ export default {
                     });
                 } else {
                     // 修复数据 - 追加不足的数据
-                    this.$emit('onArrayOperate', {
+                    emit('arrayOperate', {
                         command: 'batchPush',
                         data: {
-                            pushArray: curSchemaState.slice(this.itemsFormData.length)
+                            pushArray: curSchemaState.slice(props.itemsFormData.length)
                         }
                     });
                 }
             }
-        }
-    },
-    render(h) {
-        if (!Array.isArray(this.itemsFormData)) return false;
+        };
+        fixItemsFormData();
 
-        const {
-            schema, uiSchema, errorSchema, curNodePath, globalOptions
-        } = this.$props;
+        return () => {
+            if (!Array.isArray(props.itemsFormData)) return null;
 
-        const {
-            title,
-            description,
-            addable,
-            showIndexNumber,
-            sortable,
-            removable,
-            showTitle,
-            showDescription,
-            fieldClass,
-            fieldAttrs,
-            fieldStyle,
-        } = getUiOptions({
-            schema,
-            uiSchema,
-            curNodePath,
-            rootFormData: this.rootFormData,
-        });
+            const {
+                schema, uiSchema, errorSchema, curNodePath, globalOptions
+            } = props;
 
-        // 拆分为 tuple 和 additional
-        const cutOfArr = cutOff(this.itemsFormData, this.schema.items.length - 1);
+            const {
+                title,
+                description,
+                addable,
+                showIndexNumber,
+                sortable,
+                removable,
+                showTitle,
+                showDescription,
+                fieldClass,
+                fieldAttrs,
+                fieldStyle,
+            } = getUiOptions({
+                schema,
+                uiSchema,
+                curNodePath,
+                rootFormData: props.rootFormData,
+            });
 
-        const tupleVnodeArr = cutOfArr[0].map((item, index) => h(
-            SchemaField,
-            {
-                key: item.key,
-                props: {
-                    ...this.$props,
+            // 拆分为 tuple 和 additional
+            const cutOfArr = cutOff(props.itemsFormData, props.schema.items.length - 1);
+
+            const tupleVNodeArr = cutOfArr[0].map((item, index) => h(
+                SchemaField,
+                {
+                    key: item.key,
+                    ...props,
                     required: !([].concat(schema.items[index].type).includes('null')),
                     schema: schema.items[index],
                     uiSchema: uiSchema.items ? uiSchema.items[index] : {},
                     errorSchema: errorSchema.items ? errorSchema.items[index] : {},
                     curNodePath: computedCurPath(curNodePath, index)
                 }
-            }
-        ));
+            ));
 
-        // 通过order组件做可排序处理
-        const additionalVnodeArr = cutOfArr[1].map((item, index) => {
-            const tempUiSchema = replaceArrayIndex({
-                schema: schema.additionalItems,
-                uiSchema: uiSchema.additionalItems
-            }, index);
+            // 通过order组件做可排序处理
+            const additionalVNodeArr = cutOfArr[1].map((item, index) => {
+                const tempUiSchema = replaceArrayIndex({
+                    schema: schema.additionalItems,
+                    uiSchema: uiSchema.additionalItems
+                }, index);
 
-            return {
-                key: item.key,
-                vNode: h(
-                    SchemaField,
-                    {
-                        key: item.key,
-                        props: {
-                            ...this.$props,
+                return {
+                    key: item.key,
+                    vNode: h(
+                        SchemaField,
+                        {
+                            key: item.key,
+                            ...props,
                             schema: schema.additionalItems,
                             required: !([].concat(schema.additionalItems.type).includes('null')),
                             uiSchema: {
@@ -118,53 +116,51 @@ export default {
                                 ...tempUiSchema
                             },
                             errorSchema: errorSchema.additionalItems,
-                            curNodePath: computedCurPath(this.curNodePath, index + schema.items.length)
+                            curNodePath: computedCurPath(props.curNodePath, index + schema.items.length)
                         }
-                    }
-                )
-            };
-        });
+                    )
+                };
+            });
 
-        // 是否可添加同时受限于 additionalItems 属性
-        const trueAddable = (addable === undefined ? true : addable) && allowAdditionalItems(this.schema);
+            // 是否可添加同时受限于 additionalItems 属性
+            const trueAddable = (addable === undefined ? true : addable) && allowAdditionalItems(props.schema);
 
-        // 默认循环固定配置的数据 长度外的使用ArrayOrderList渲染
-        return h(
-            FieldGroupWrap,
-            {
-                props: {
+            // 默认循环固定配置的数据 长度外的使用ArrayOrderList渲染
+            return h(
+                FieldGroupWrap,
+                {
                     title,
                     description,
                     showTitle,
-                    showDescription
+                    showDescription,
+                    ...fieldAttrs,
+                    class: fieldClass,
+                    style: fieldStyle,
                 },
-                class: fieldClass,
-                attrs: fieldAttrs,
-                style: fieldStyle,
-            },
-            [
-                // 先显示Tuple固定项
-                ...tupleVnodeArr,
+                {
+                    default: () => [
+                        // 先显示Tuple固定项
+                        ...tupleVNodeArr,
 
-                // additional items
-                h(
-                    ArrayOrderList,
-                    {
-                        props: {
-                            vNodeList: additionalVnodeArr,
-                            tupleItemsLength: schema.items.length,
-                            addable: trueAddable,
-                            showIndexNumber,
-                            sortable,
-                            removable,
-                            maxItems: schema.maxItems,
-                            minItems: schema.minItems,
-                            globalOptions
-                        },
-                        on: this.$listeners
-                    }
-                )
-            ]
-        );
+                        // additional items
+                        h(
+                            ArrayOrderList,
+                            {
+                                onArrayOperate: (...args) => emit('arrayOperate', ...args),
+                                vNodeList: additionalVNodeArr,
+                                tupleItemsLength: schema.items.length,
+                                addable: trueAddable,
+                                showIndexNumber,
+                                sortable,
+                                removable,
+                                maxItems: schema.maxItems,
+                                minItems: schema.minItems,
+                                globalOptions,
+                            }
+                        )
+                    ]
+                }
+            );
+        };
     }
 };

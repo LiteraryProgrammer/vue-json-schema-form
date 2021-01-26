@@ -25,7 +25,7 @@ export function computedCurPath(prePath, curKey) {
 
 // 删除当前path值
 export function deletePathVal(vueData, name) {
-    delete vueData.name;
+    delete vueData[name];
 }
 
 // 设置当前path值

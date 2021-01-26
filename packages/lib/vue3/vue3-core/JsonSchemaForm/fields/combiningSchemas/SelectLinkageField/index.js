@@ -2,9 +2,11 @@
  * Created by Liu.Jun on 2020/5/19 10:15 下午.
  */
 
+
+import { ref, watch, h } from 'vue';
 import {
     getPathVal, setPathVal, deletePathVal, nodePath2ClassName
-} from '@lljj/vjsf-utils/vueUtils';
+} from '@lljj/vjsf-utils/vue3Utils';
 import {
     isEmptyObject, filterObject, isObject, getSchemaType
 } from '@lljj/vjsf-utils/utils';
@@ -34,29 +36,26 @@ export default {
             require: true
         }
     },
-    data() {
-        const curSelectIndex = this.computedCurSelectIndexByFormData(getPathVal(this.rootFormData, this.curNodePath));
-        return {
-            curSelectIndex
-        };
-    },
-    methods: {
-        computedCurSelectIndexByFormData(formData) {
-            const index = getMatchingOption(formData, this.selectList, this.rootSchema);
+    setup(props) {
+        const computedCurSelectIndexByFormData = (formData) => {
+            const index = getMatchingOption(formData, props.selectList, props.rootSchema, true);
             if (index !== 0) return index;
 
             // 找不到默认等于原本的值
-            return this.curSelectIndex || 0;
-        },
+            return props.curSelectIndex || 0;
+        };
+
+        // 当前选中 option 项
+        const curSelectIndex = ref(computedCurSelectIndexByFormData(getPathVal(props.rootFormData, props.curNodePath)));
 
         // 下拉选项 VNode
-        getSelectBoxVNode() {
+        const getSelectBoxVNode = () => {
             // 下拉选项参数
             const selectWidgetConfig = getWidgetConfig({
-                schema: this.schema[`${this.combiningType}Select`] || {}, // 扩展 oneOfSelect,anyOfSelect字段
-                uiSchema: this.uiSchema[`${this.combiningType}Select`] || {}, // 通过 uiSchema['oneOf'] 配置ui信息
-                curNodePath: this.curNodePath,
-                rootFormData: this.rootFormData,
+                schema: props.schema[`${props.combiningType}Select`] || {}, // 扩展 oneOfSelect,anyOfSelect字段
+                uiSchema: props.uiSchema[`${props.combiningType}Select`] || {}, // 通过 uiSchema['oneOf'] 配置ui信息
+                curNodePath: props.curNodePath,
+                rootFormData: props.rootFormData,
             }, () => ({
                 // 枚举参数
                 widget: 'SelectWidget'
@@ -64,19 +63,19 @@ export default {
 
             // title description 回退到 schema 配置，但这里不使用 uiSchema配置
             // select ui配置需要使用 (oneOf|anyOf)Select
-            selectWidgetConfig.label = selectWidgetConfig.label || this.schema.title;
-            selectWidgetConfig.description = selectWidgetConfig.description || this.schema.description;
+            selectWidgetConfig.label = selectWidgetConfig.label || props.schema.title;
+            selectWidgetConfig.description = selectWidgetConfig.description || props.schema.description;
 
             // 下拉列表枚举值
             if (!selectWidgetConfig.uiProps.enumOptions) {
-                const uiSchemaSelectList = this.uiSchema[this.combiningType] || [];
-                selectWidgetConfig.uiProps.enumOptions = this.selectList.map((option, index) => {
+                const uiSchemaSelectList = props.uiSchema[props.combiningType] || [];
+                selectWidgetConfig.uiProps.enumOptions = props.selectList.map((option, index) => {
                     const curUiOptions = getUiOptions({
                         schema: option,
                         uiSchema: uiSchemaSelectList[index],
                         containsSpec: false,
-                        // curNodePath: this.curNodePath,
-                        // rootFormData: this.rootFormData,
+                        // curNodePath: props.curNodePath,
+                        // rootFormData: props.rootFormData,
                     });
                     return {
                         label: curUiOptions.title || `选项 ${index + 1}`,
@@ -87,45 +86,40 @@ export default {
 
             // oneOf option 渲染
             // 选择框 VNode
-            return this.$createElement(
+            return h(
                 Widget,
                 {
-                    key: `fieldSelect_${this.combiningType}`,
+                    key: `fieldSelect_${props.combiningType}`,
                     class: {
-                        [`fieldSelect_${this.combiningType}`]: true
+                        [`fieldSelect_${props.combiningType}`]: true
                     },
-                    props: {
-                        isFormData: false,
-                        curValue: this.curSelectIndex,
-                        globalOptions: this.globalOptions,
-                        ...selectWidgetConfig
-                    },
-                    on: {
-                        onChange: (event) => {
-                            this.curSelectIndex = event;
-                        }
+                    isFormData: false,
+                    curValue: curSelectIndex.value,
+                    globalOptions: props.globalOptions,
+                    ...selectWidgetConfig,
+                    onChange: (event) => {
+                        curSelectIndex.value = event;
                     }
                 }
             );
-        }
-    },
-    watch: {
+        };
+
         // 对象 切换了select
         // 如果object 类型 option有添加属性 这里做移除
         // 对新option计算默认值
-        curSelectIndex(newVal, oldVal) {
-            const curFormData = getPathVal(this.rootFormData, this.curNodePath);
+        watch(curSelectIndex, (newVal, oldVal) => {
+            const curFormData = getPathVal(props.rootFormData, props.curNodePath);
 
             // 计算出 新选项默认值
-            const newOptionData = getDefaultFormState(this.selectList[newVal], undefined, this.rootSchema);
+            const newOptionData = getDefaultFormState(props.selectList[newVal], undefined, props.rootSchema);
 
             const hasOwn = Object.prototype.hasOwnProperty;
 
             // 移除旧key
             if (isObject(curFormData)) {
                 const oldSelectSchema = retrieveSchema(
-                    this.selectList[oldVal],
-                    this.rootSchema
+                    props.selectList[oldVal],
+                    props.rootSchema
                 );
                 if (getSchemaType(oldSelectSchema) === 'object') {
                     // 移除旧schema添加的属性
@@ -136,7 +130,6 @@ export default {
                             && !hasOwn.call(newOptionData, key)
                         ) {
                             deletePathVal(curFormData, key);
-                            // delete curFormData[key];
                         }
                     }
                 }
@@ -150,127 +143,122 @@ export default {
                     }
                 });
             } else {
-                setPathVal(this.rootFormData, this.curNodePath, newOptionData || curFormData);
+                setPathVal(props.rootFormData, props.curNodePath, newOptionData || curFormData);
             }
-        }
-    },
-    render(h) {
-        const { curNodePath } = this.$props;
-        const pathClassName = nodePath2ClassName(curNodePath);
+        });
 
-        // object 需要保持原有属性，如果存在原有属性这里单独渲染
-        let originVNode = null;
-        const isTypeObject = (this.schema.type === 'object' || this.schema.properties);
-        if (isTypeObject && !isEmptyObject(this.schema.properties)) {
-            const origSchema = Object.assign({}, this.schema);
-            delete origSchema[this.combiningType];
+        return () => {
+            const { curNodePath } = props;
+            const pathClassName = nodePath2ClassName(curNodePath);
 
-            originVNode = h(SchemaField, {
-                key: `origin_${this.combiningType}`,
-                class: {
-                    [`${this.combiningType}_originBox`]: true,
-                    [`${pathClassName}-originBox`]: true
-                },
-                props: {
-                    ...this.$props,
+            // object 需要保持原有属性，如果存在原有属性这里单独渲染
+            let originVNode = null;
+            const isTypeObject = (props.schema.type === 'object' || props.schema.properties);
+            if (isTypeObject && !isEmptyObject(props.schema.properties)) {
+                const origSchema = Object.assign({}, props.schema);
+                delete origSchema[props.combiningType];
+
+                originVNode = h(SchemaField, {
+                    key: `origin_${props.combiningType}`,
+                    class: {
+                        [`${props.combiningType}_originBox`]: true,
+                        [`${pathClassName}-originBox`]: true
+                    },
+                    ...props,
                     schema: origSchema,
                     // needValidFieldGroup: false // 单独校验，这里无需处理
-                }
-            });
-        }
+                });
+            }
 
-        // 选择附加的节点
-        const childrenVNodeList = [this.getSelectBoxVNode()];
+            // 选择附加的节点
+            const childrenVNodeList = [getSelectBoxVNode()];
 
-        // 当前选中的 oneOf 附加的节点
-        let curSelectSchema = this.selectList[this.curSelectIndex];
-        if (curSelectSchema) {
-            // 覆盖父级的属性
-            const {
-                // eslint-disable-next-line no-unused-vars
-                properties,
-                // eslint-disable-next-line no-unused-vars
-                [this.combiningType]: combiningType,
-                // eslint-disable-next-line no-unused-vars
-                [`${this.combiningType}Select`]: combiningTypeSelect,
-                ...parentSchema
-            } = this.schema;
+            // 当前选中的 oneOf 附加的节点
+            let curSelectSchema = props.selectList[curSelectIndex.value];
+            if (curSelectSchema) {
+                // 覆盖父级的属性
+                const {
+                    // eslint-disable-next-line no-unused-vars
+                    properties,
+                    // eslint-disable-next-line no-unused-vars
+                    [props.combiningType]: combiningType,
+                    // eslint-disable-next-line no-unused-vars
+                    [`${props.combiningType}Select`]: combiningTypeSelect,
+                    ...parentSchema
+                } = props.schema;
 
-            curSelectSchema = Object.assign({}, parentSchema, curSelectSchema);
+                curSelectSchema = Object.assign({}, parentSchema, curSelectSchema);
 
-            // 当前节点的ui err配置，用来支持所有选项的统一配置
-            // 取出 oneOf anyOf 同级配置，然后再合并到 当前选中的schema中
-            const userUiOptions = filterObject(getUiOptions({
-                schema: this.schema,
-                uiSchema: this.uiSchema,
-                containsSpec: false,
-                curNodePath,
-                rootFormData: this.rootFormData,
-            }), key => (key === this.combiningType ? undefined : `ui:${key}`));
+                // 当前节点的ui err配置，用来支持所有选项的统一配置
+                // 取出 oneOf anyOf 同级配置，然后再合并到 当前选中的schema中
+                const userUiOptions = filterObject(getUiOptions({
+                    schema: props.schema,
+                    uiSchema: props.uiSchema,
+                    containsSpec: false,
+                    curNodePath,
+                    rootFormData: props.rootFormData,
+                }), key => (key === props.combiningType ? undefined : `ui:${key}`));
 
-            const userErrOptions = filterObject(getUserErrOptions({
-                schema: this.schema,
-                uiSchema: this.uiSchema,
-                errorSchema: this.errorSchema
-            }), key => (key === this.combiningType ? undefined : `err:${key}`));
+                const userErrOptions = filterObject(getUserErrOptions({
+                    schema: props.schema,
+                    uiSchema: props.uiSchema,
+                    errorSchema: props.errorSchema
+                }), key => (key === props.combiningType ? undefined : `err:${key}`));
 
-            childrenVNodeList.push(
-                h(
-                    SchemaField,
-                    {
-                        key: `appendSchema_${this.combiningType}`,
-                        props: {
-                            ...this.$props,
+                childrenVNodeList.push(
+                    h(
+                        SchemaField,
+                        {
+                            key: `appendSchema_${props.combiningType}`,
+                            ...props,
                             schema: {
                                 'ui:showTitle': false, // 默认不显示title
                                 'ui:showDescription': false, // 默认不显示描述
                                 ...curSelectSchema,
                             },
-                            required: this.required,
+                            required: props.required,
                             uiSchema: {
                                 ...userUiOptions, // 合并oneOf 级的配置
-                                ...((this.uiSchema[this.combiningType] || [])[this.curSelectIndex])
+                                ...((props.uiSchema[props.combiningType] || [])[curSelectIndex.value])
                             },
                             errorSchema: {
                                 ...userErrOptions, // 合并oneOf 级的配置
-                                ...((this.errorSchema[this.combiningType] || [])[this.curSelectIndex])
+                                ...((props.errorSchema[props.combiningType] || [])[curSelectIndex.value])
                             },
                             // needValidFieldGroup: false // 单独校验，这里无需处理
                         }
-                    }
-                )
+                    )
+                );
+            }
+
+            // oneOf 校验 VNode
+            childrenVNodeList.push(
+                h(Widget, {
+                    key: `validateWidget-${props.combiningType}`,
+                    class: {
+                        validateWidget: true,
+                        [`validateWidget-${props.combiningType}`]: true
+                    },
+                    schema: props.schema,
+                    uiSchema: props.uiSchema,
+                    errorSchema: props.errorSchema,
+                    curNodePath: props.curNodePath,
+                    rootFormData: props.rootFormData,
+                    globalOptions: props.globalOptions
+                })
             );
-        }
 
-        // oneOf 校验 VNode
-        childrenVNodeList.push(
-            h(Widget, {
-                key: `validateWidget-${this.combiningType}`,
-                class: {
-                    validateWidget: true,
-                    [`validateWidget-${this.combiningType}`]: true
-                },
-                props: {
-                    schema: this.schema,
-                    uiSchema: this.uiSchema,
-                    errorSchema: this.errorSchema,
-                    curNodePath: this.curNodePath,
-                    rootFormData: this.rootFormData,
-                    globalOptions: this.globalOptions
-                }
-            })
-        );
-
-        return h('div', [
-            originVNode,
-            h('div', {
-                key: `appendBox_${this.combiningType}`,
-                class: {
-                    appendCombining_box: true,
-                    [`${this.combiningType}_appendBox`]: true,
-                    [`${pathClassName}-appendBox`]: true
-                }
-            }, childrenVNodeList)
-        ]);
+            return h('div', [
+                originVNode,
+                h('div', {
+                    key: `appendBox_${props.combiningType}`,
+                    class: {
+                        appendCombining_box: true,
+                        [`${props.combiningType}_appendBox`]: true,
+                        [`${pathClassName}-appendBox`]: true
+                    }
+                }, childrenVNodeList)
+            ]);
+        };
     }
 };

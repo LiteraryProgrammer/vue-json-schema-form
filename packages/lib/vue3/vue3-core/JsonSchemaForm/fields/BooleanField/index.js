@@ -11,7 +11,6 @@ import vueProps from '../props';
 export default {
     name: 'BooleanField',
     props: vueProps,
-    functional: true,
     setup(props, { attrs }) {
         return () => {
             const {

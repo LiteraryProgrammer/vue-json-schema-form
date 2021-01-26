@@ -3,7 +3,6 @@
  */
 
 import { h } from 'vue';
-import { resolveComponent } from '@lljj/vjsf-utils/vue3Utils';
 
 import { orderProperties, getUiOptions } from '@lljj/vjsf-utils/formUtils';
 import { computedCurPath, getPathVal } from '@lljj/vjsf-utils/vueUtils';
@@ -17,7 +16,6 @@ import SchemaField from '../SchemaField';
 
 export default {
     name: 'ObjectField',
-    functional: true,
     props: vueProps,
     setup(props) {
         // required
@@ -68,9 +66,9 @@ export default {
                 const required = isRequired(name);
                 const { isDependency, curDependent } = isDependOn(name);
 
-                return h(
-                    // onlyShowWhenDependent 只渲染被依赖的属性
-                    (isDependency && onlyShowIfDependent && !curDependent) ? null : resolveComponent(SchemaField),
+                // onlyShowWhenDependent 只渲染被依赖的属性
+                return (isDependency && onlyShowIfDependent && !curDependent) ? null : h(
+                    SchemaField,
                     {
                         key: name,
                         ...props,
@@ -100,7 +98,7 @@ export default {
 
                         // 插入一个Widget，校验 object组 - minProperties. maxProperties. oneOf 等需要外层校验的数据
                         ...props.needValidFieldGroup ? [
-                            h(resolveComponent(Widget), {
+                            h(Widget, {
                                 key: 'validateWidget-object',
                                 class: {
                                     validateWidget: true,
