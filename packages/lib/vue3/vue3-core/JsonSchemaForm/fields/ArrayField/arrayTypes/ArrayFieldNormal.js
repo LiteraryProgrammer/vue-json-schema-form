@@ -4,7 +4,7 @@
 
 import { h } from 'vue';
 
-import { computedCurPath } from '@lljj/vjsf-utils/vueUtils';
+import { computedCurPath } from '@lljj/vjsf-utils/vue3Utils';
 import { getUiOptions, replaceArrayIndex } from '@lljj/vjsf-utils/formUtils';
 
 import SchemaField from '../../SchemaField';

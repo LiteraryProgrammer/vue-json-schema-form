@@ -50,7 +50,6 @@ export default {
             // 引用类型，当值不相等，说明是被重新赋值
             // 这里应该对比原始值
             if (newVal !== oldVal && toRaw(newVal) !== toRaw(oldVal) && Array.isArray(newVal)) {
-                debugger;
                 formKeys.value = newVal.map(() => genId());
             }
         }, {

@@ -6,7 +6,7 @@ import { h } from 'vue';
 
 import { allowAdditionalItems, getUiOptions, replaceArrayIndex } from '@lljj/vjsf-utils/formUtils';
 import getDefaultFormState from '@lljj/vjsf-utils/schema/getDefaultFormState';
-import { computedCurPath } from '@lljj/vjsf-utils/vueUtils';
+import { computedCurPath } from '@lljj/vjsf-utils/vue3Utils';
 import { cutOff } from '@lljj/vjsf-utils/arrayUtils';
 import vueProps from '../../props';
 

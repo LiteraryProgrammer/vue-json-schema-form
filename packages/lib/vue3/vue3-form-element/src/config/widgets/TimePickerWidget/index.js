@@ -2,23 +2,24 @@
  * Created by Liu.Jun on 2020/7/22 13:22.
  */
 
+import { h } from 'vue';
+import { resolveComponent } from '@lljj/vjsf-utils/vue3Utils';
+import { parseDateString } from '@lljj/vjsf-utils/utils';
+
+const formatTimeStr = (dateString) => {
+    const { hour, minute, second } = parseDateString(dateString, true);
+    return `${hour}:${minute}:${second}`;
+};
+
 export default {
     name: 'TimePickerWidget',
-    functional: true,
-    render(h, context) {
-        context.data.attrs = {
-            'value-format': 'HH:mm:ss',
-            ...context.data.attrs || {}
-        };
-
-        const oldInputCall = context.data.on.input;
-        context.data.on = {
-            ...context.data.on,
-            input(val) {
-                oldInputCall.apply(context.data.on, [val === null ? undefined : val]);
+    inheritAttrs: false,
+    setup(props, { attrs, slots }) {
+        return () => h(resolveComponent('el-time-picker'), {
+            ...attrs,
+            'onUpdate:modelValue': (val) => {
+                attrs['onUpdate:modelValue'].apply(attrs, [val === null ? undefined : formatTimeStr(val)]);
             }
-        };
-
-        return h('el-time-picker', context.data, context.children);
+        }, slots);
     }
 };

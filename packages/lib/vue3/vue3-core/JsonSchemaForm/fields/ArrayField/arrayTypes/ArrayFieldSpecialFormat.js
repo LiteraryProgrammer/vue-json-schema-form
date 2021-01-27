@@ -24,7 +24,7 @@ export default {
             rootFormData
         });
 
-        return h(
+        return () => h(
             Widget,
             {
                 ...attrs,

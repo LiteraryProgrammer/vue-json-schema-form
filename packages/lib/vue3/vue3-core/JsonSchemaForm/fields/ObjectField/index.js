@@ -5,7 +5,7 @@
 import { h } from 'vue';
 
 import { orderProperties, getUiOptions } from '@lljj/vjsf-utils/formUtils';
-import { computedCurPath, getPathVal } from '@lljj/vjsf-utils/vueUtils';
+import { computedCurPath, getPathVal } from '@lljj/vjsf-utils/vue3Utils';
 import { isObject } from '@lljj/vjsf-utils/utils';
 import vueProps from '../props';
 import FieldGroupWrap from '../../components/FieldGroupWrap';
